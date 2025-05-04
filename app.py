@@ -18,7 +18,7 @@ def analyze():
     )
 
     response = openai.chat.completions.create(
-        model="gpt-4-vision",  # Updated model name
+        model="gpt-4-vision-preview",  # Updated model name
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": [
