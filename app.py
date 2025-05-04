@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
-import openai
+from openai import OpenAI
 import os
-client = openai()
+client = OpenAI()
 app = Flask(__name__)
-openai.api_key = os.environ.get("OPENAI_API_KEY")  # Use environment variable for security
+OpenAI.api_key = os.environ.get("OPENAI_API_KEY")  # Use environment variable for security
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
