@@ -17,8 +17,8 @@ def analyze():
         "Be specific and encouraging."
     )
 
-    response = openai.ChatCompletions.create(
-        model="gpt-4-vision-preview",  # Updated model name
+    response = client.chat.completions.create(
+        model="gpt-4.1",  # Updated model name
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": [
