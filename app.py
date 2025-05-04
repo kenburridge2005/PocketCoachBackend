@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import openai
 import os
-client = OpenAI()
+client = openai()
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")  # Use environment variable for security
 
@@ -14,7 +14,7 @@ def analyze():
     prompt = (
         "You are a fitness coach. Analyze the following two images of a person's body (front and back). "
         "Describe their strengths, weaknesses, and recommend specific workouts to address their weaknesses. "
-        "Be specific and encouraging."
+        "Be specific."
     )
 
     response = client.chat.completions.create(
