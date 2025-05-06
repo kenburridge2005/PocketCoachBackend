@@ -1,76 +1,74 @@
-from flask import Flask, request, jsonify
-from openai import OpenAI
 import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import openai
+from werkzeug.utils import secure_filename
+from PIL import Image
+import io
+import base64
 
-client = OpenAI()
+# Initialize Flask app
 app = Flask(__name__)
-OpenAI.api_key = os.environ.get("OPENAI_API_KEY")  # Use environment variable for security
+CORS(app)
 
-@app.route('/analyze', methods=['POST'])
+# Set your OpenAI API key
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# Helper function to call OpenAI API
+def call_openai(prompt, model="gpt-4o", max_tokens=800):
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        temperature=0.7,
+    )
+    return response.choices[0].message["content"]
+
+@app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        print("Received /analyze POST request")
-        data = request.json
-        print(f"Request data keys: {list(data.keys()) if data else 'No data received'}")
-        front_image = data['front_image']
-        back_image = data['back_image']
+        # Get data from request
+        weight = request.form.get("weight")
+        goal = request.form.get("goal")
+        front_image = request.files.get("front_image")
+        back_image = request.files.get("back_image")
+
+        # Optionally, process images (e.g., save, analyze, etc.)
+        # For now, just acknowledge receipt
+        # You could convert images to base64 if you want to send them to OpenAI Vision models
 
         prompt = (
-            "You are a fitness coach. Analyze the following two images of a person's body (front and back). "
-            "Describe their strengths, weaknesses, and recommend specific workouts to address their weaknesses. "
-            "Be specific."
+            f"User's weight: {weight} kg. Goal: {goal}.\n"
+            "Based on the user's front and back body photos (not shown here), provide a fitness analysis and a detailed, actionable workout plan."
         )
 
-        response = client.chat.completions.create(
-            model="gpt-4.1",  # Use the correct model name you have access to
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{front_image}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{back_image}"}}
-                ]}
-            ],
-            max_tokens=500
-        )
+        # Call OpenAI API
+        analysis = call_openai(prompt)
 
-        print("OpenAI response received")
-        return jsonify({"analysis": response.choices[0].message.content})
+        return jsonify({"analysis": analysis}), 200
     except Exception as e:
-        print(f"Error in /analyze: {e}")
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
-
-from flask import Flask, request, jsonify
-import openai
-import os
-
-app = Flask(__name__)
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
-@app.route('/mealplan', methods=['POST'])
+@app.route("/mealplan", methods=["POST"])
 def mealplan():
-    data = request.get_json()
-    goal = data.get('goal', 'lose weight')
-    preferences = data.get('preferences', '')
-    calories = data.get('calories', '')
-
-    prompt = f"""
-    You are a certified fitness nutrition coach. Create a 1-week meal plan for someone who wants to {goal}.
-    {f"Calorie target: {calories}." if calories else ""}
-    {f"Dietary preferences/allergies: {preferences}." if preferences else ""}
-    The plan should include breakfast, lunch, dinner, and snacks for each day. Make it realistic, healthy, and easy to follow. Format as Markdown.
-    """
-
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",  # or "gpt-4" or "gpt-3.5-turbo"
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1200,
-            temperature=0.7,
+        data = request.get_json()
+        goal = data.get("goal")
+        preferences = data.get("preferences", "")
+        calories = data.get("calories", "")
+
+        prompt = (
+            f"Create a 1-day meal plan for someone whose goal is '{goal}'. "
+            f"Dietary preferences: {preferences}. "
+            f"Calorie target: {calories} kcal. "
+            "List meals with ingredients and approximate calories per meal."
         )
-        mealplan = response.choices[0].message.content
-        return jsonify({"mealplan": mealplan})
+
+        mealplan = call_openai(prompt)
+
+        return jsonify({"mealplan": mealplan}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
