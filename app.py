@@ -85,15 +85,30 @@ def analyze_images(front_image, back_image, weight, goal):
 def analyze():
     try:
         data = request.get_json()
-        print("Received data:", data)  # Add this line
+        print("Received data:", data)
 
         if not data or 'front_image' not in data or 'back_image' not in data or 'weight' not in data or 'goal' not in data:
-            print("Missing required parameters")  # Add this line
+            print("Missing required parameters")
             return jsonify({"error": "Missing required parameters"}), 400
 
-        # ... rest of your code ...
+        front_image = data['front_image']
+        back_image = data['back_image']
+        weight = data['weight']
+        goal = data['goal']
+
+        analysis, workout_plan = analyze_images(front_image, back_image, weight, goal)
+
+        if analysis is None or workout_plan is None:
+            print("Failed to analyze images")
+            return jsonify({"error": "Failed to analyze images"}), 500
+
+        return jsonify({
+            "analysis": analysis,
+            "workout_plan": workout_plan
+        })
+
     except Exception as e:
-        print(f"Error in endpoint: {str(e)}")  # This already exists
+        print(f"Error in endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/mealplan', methods=['POST'])
@@ -124,4 +139,4 @@ def mealplan():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True) 
